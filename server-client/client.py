@@ -1,7 +1,6 @@
-import socket
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
-import os
+import socket
 
 def pad(data):
     length = 8 - (len(data) % 8)
@@ -24,18 +23,20 @@ def client_program():
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client_socket.connect(('127.0.0.1', 12345))
 
-    # Menggunakan kunci acak dengan panjang 24 byte (192 bit) untuk 3DES
-    key = os.urandom(24)
-    client_socket.send(key)
+    # Terima kunci dari server
+    server_key = client_socket.recv(24)
 
     while True:
-        message = input('Enter message for server: ')
-        encrypted_message = encrypt_message(message.encode(), key)
-        client_socket.send(encrypted_message)
+        encrypted_message = client_socket.recv(1024)
+        decrypted_message = decrypt_message(encrypted_message, server_key)
+        print('Received from server:', decrypted_message.decode())
 
-        encrypted_response = client_socket.recv(1024)
-        decrypted_response = decrypt_message(encrypted_response, key)
-        print('Received from server:', decrypted_response.decode())
+        message = input('Enter message for server: ')
+        encrypted_response = encrypt_message(message.encode(), server_key)
+        client_socket.send(encrypted_response)
+
+        if message.lower() == 'exit':
+            break
 
     client_socket.close()
 
