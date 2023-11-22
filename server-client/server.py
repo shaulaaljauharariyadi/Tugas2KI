@@ -21,6 +21,9 @@ def decrypt_message(encrypted_message, key):
     return decrypted_message
 
 def server_program():
+    # Tentukan kunci secara statis di sini
+    static_key = b'StaticKey12345678'
+
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind(('', 12345))
     server_socket.listen(5)
@@ -31,19 +34,20 @@ def server_program():
         client_socket, addr = server_socket.accept()
         print('Got connection from', addr)
 
-        key = client_socket.recv(24)
+        # Kirim kunci statis ke klien
+        client_socket.send(static_key)
 
         while True:
-            encrypted_message = client_socket.recv(1024)
-            if not encrypted_message:
+            message = input('Enter message for client: ')
+            encrypted_message = encrypt_message(message.encode(), static_key)
+            client_socket.send(encrypted_message)
+
+            if message.lower() == 'exit':
                 break
 
-            decrypted_message = decrypt_message(encrypted_message, key)
-            print('Received from client:', decrypted_message.decode())
-
-            message = input('Enter message for client: ')
-            encrypted_response = encrypt_message(message.encode(), key)
-            client_socket.send(encrypted_response)
+            encrypted_response = client_socket.recv(1024)
+            decrypted_response = decrypt_message(encrypted_response, static_key)
+            print('Received from client:', decrypted_response.decode())
 
         client_socket.close()
 
